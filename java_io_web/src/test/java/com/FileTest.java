@@ -5,6 +5,11 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.sql.SQLOutput;
 
 public class FileTest {
@@ -84,22 +89,101 @@ public class FileTest {
 //        File file = new File("E:\\j2ee");
         printFileName(file);
     }
-    public void printFileName(File file){
-        if (file.isFile()){
+    public void printFileName(File file) {
+        if (file.isFile()) {
             System.out.println(file.getName());
-        }else{
+            File newFile = new File(file.getParentFile(), "$" + file.getName());
+            boolean renamed = file.renameTo(newFile);
+            if (renamed) {
+                // 更新文件的修改时间为当前时间
+                newFile.setLastModified(System.currentTimeMillis());
+            }
+            System.out.println("Renamed: " + renamed);
+        } else {
             File[] files = file.listFiles();
-            for (File file1 : files) {
-                printFileName(file1);
+            if (files != null) {
+                for (File file1 : files) {
+                    printFileName(file1);
+                }
             }
         }
     }
 
+    public void printFileName2(File file) {
+        if (file.isFile()) {
+            String fileName = file.getName();
+            if (fileName.length() > 1) {
+                String newFileName = fileName.substring(1); // 去掉首字符
+                File newFile = new File(file.getParentFile(), newFileName);
+                boolean renamed = file.renameTo(newFile);
+                if (renamed) {
+                    // 更新文件的修改时间为当前时间
+                    newFile.setLastModified(System.currentTimeMillis());
+                }
+                System.out.println("Renamed back: " + renamed);
+            }
+        } else {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (File file1 : files) {
+                    printFileName2(file1);
+                }
+            }
+        }
+    }
+
+
+
+
     @Test
-    public void test5(){
+    public void test5() {
         File file = new File("E:\\j2ee");
         printFileName(file);
+//        File renamedFile = new File("E:\\j2ee");
+//        printFileName2(renamedFile);
     }
+
+    @Test
+    public void test6(){
+        String a = "$aaaa";
+        String substring = a.substring(1);
+        System.out.println(substring);
+    }
+
+    @Test
+    public void test(){
+        File file = new File("E:\\j2ee"); // 修改为你需要操作的文件夹路径
+        updateFileAttributes(file);
+    }
+
+    public void updateFileAttributes(File file) {
+        if (file.isFile()) {
+            Path filePath = file.toPath();
+            FileTime currentTime = FileTime.fromMillis(System.currentTimeMillis());
+
+            try {
+                // 获取文件属性视图
+                BasicFileAttributeView attributes = Files.getFileAttributeView(filePath, BasicFileAttributeView.class);
+
+                // 设置文件的访问时间、修改时间和创建时间
+                attributes.setTimes(currentTime, currentTime, currentTime);
+
+                System.out.println("Updated times for: " + file.getName());
+            } catch (IOException e) {
+                System.err.println("Failed to update times for: " + file.getName());
+                e.printStackTrace();
+            }
+        } else {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (File child : files) {
+                    updateFileAttributes(child);
+                }
+            }
+        }
+    }
+
+
 
 
 }
